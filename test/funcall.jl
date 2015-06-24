@@ -267,8 +267,8 @@ function f( args...; dict... )
 end
 """
 msgs = lintstr(s)
-@test contains( msgs[1].message, "typeof( args ) == (Any...,)")
-@test contains( msgs[2].message, "typeof( dict ) == (Any...,)")
+@test contains( msgs[1].message, "typeof( args ) == Tuple{Vararg{Any}}")
+@test contains( msgs[2].message, "typeof( dict ) == Tuple{Vararg{Any}}")
 
 s = """
 function f( args::Float64... )
@@ -277,7 +277,7 @@ function f( args::Float64... )
 end
 """
 msgs = lintstr(s)
-@test contains( msgs[1].message, "typeof( args ) == (Float64...,)")
+@test contains( msgs[1].message, "typeof( args ) == Tuple{Vararg{Float64}}")
 
 s = """
 function f( args::Float64... )

@@ -198,11 +198,11 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             sym = resolveArguments( sube.args[1], 0 )
             if typeof(sym) == Symbol
                 if isstaged
-                    typeassert[ sym ] = (DataType...,)
+                    typeassert[ sym ] = @compat(Tuple{Vararg{DataType}})
                 elseif haskey( typeassert, sym )
-                    typeassert[ sym ] = (typeassert[sym]...,)
+                    typeassert[ sym ] = @compat(Tuple{Vararg{typeassert[sym]}})
                 else
-                    typeassert[ sym ] = (Any...,)
+                    typeassert[ sym ] = @compat(Tuple{Vararg{Any}})
                 end
             end
         elseif sube.head == :($)
@@ -230,7 +230,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             vi = stacktop.localarguments[end][s]
             if haskey( typeassert, s )
                 dt = eval( typeassert[ s ] )
-                if typeof(dt ) == DataType || typeof(dt ) == (DataType,)
+                if typeof(dt ) == DataType || typeof(dt ) == @compat(Tuple{DataType})
                     vi.typeactual = dt
                     if dt != Any && haskey( typeRHShints, s ) && typeRHShints[s] != Any &&
                         !( typeRHShints[s] <: dt )

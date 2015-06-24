@@ -23,7 +23,7 @@ end
 
 if VERSION < v"0.4-dev+3345"
 function eltype{T}( ::Type{Enumerate{T}})
-    (Int, T )
+    @compat Tuple{Int,T}
 end
 end
 
@@ -107,14 +107,14 @@ function guesstype( ex, ctx::LintContext )
         end
         # TODO: this should be a module function
         checkret = x -> begin
-            if typeof( x ) == DataType || typeof( x ) == (DataType,)
+            if typeof( x ) == DataType || typeof( x ) == @compat(Tuple{DataType})
                 return x
             else
                 tmp = x
                 try
                     tmp = eval( x )
                 end
-                if typeof( tmp ) == DataType || typeof( tmp ) == (DataType,)
+                if typeof( tmp ) == DataType || typeof( tmp ) == @compat(Tuple{DataType})
                     return tmp
                 else
                     return x
@@ -166,7 +166,7 @@ function guesstype( ex, ctx::LintContext )
         for a in ex.args
             push!( ts, guesstype( a, ctx ) )
         end
-        return tuple( ts... )
+        return @compat(Tuple{ts...})
     end
 
     if isexpr( ex, :(::) ) && length( ex.args ) == 2
@@ -293,8 +293,8 @@ function guesstype( ex, ctx::LintContext )
                     lastargtype = guesstype( ex.args[3], ctx )
                     if lastargtype <: Integer
                         ret = Array{ elt, 1 }
-                    elseif lastargtype <: Tuple && all( x->x<:Integer, lastargtype )
-                        ret = Array{ elt, length( lastargtype ) }
+                    elseif lastargtype <: Tuple && all( x->x<:Integer, lastargtype.types )
+                        ret = Array{ elt, length( lastargtype.types ) }
                     else
                         ret = Array{ elt }
                     end
@@ -318,8 +318,8 @@ function guesstype( ex, ctx::LintContext )
         if length(sig) >= 1 && sig[1] == DataType
             if length(sig) == 2 && isexpr(ex.args[3],:tuple)
                 ret = Array{ elt, length(ex.args[3].args ) }
-            elseif length(sig) == 2 && sig[2] <: Tuple && all( x->x <: Integer, sig[2] )
-                ret = Array{ elt, length( sig[2] ) }
+            elseif length(sig) == 2 && sig[2] <: Tuple && all( x->x <: Integer, sig[2].types )
+                ret = Array{ elt, length( sig[2].types ) }
             else
                 ret = Array{ elt, length(ex.args)-2 }
             end
@@ -378,7 +378,7 @@ function guesstype( ex, ctx::LintContext )
             if sig[2] <: Number
                 return Array{ eletyp, 1 }
             elseif sig[2] <: Tuple
-                return Array{ eletyp, length( sig[2] ) }
+                return Array{ eletyp, length( sig[2].types ) }
             else
                 return Array{ eletyp }
             end
@@ -453,8 +453,8 @@ function guesstype( ex, ctx::LintContext )
                 end
             end
             return Any
-        elseif typeof( partyp ) == (DataType,) # e.g. (Int,), (Int...,), (DataType,...)
-            fst = partyp[1]
+        elseif typeof( partyp ) == @compat(Tuple{DataType}) # e.g. (Int,), (Int...,), (DataType,...)
+            fst = partyp.types[1]
             try
                 if fst.name.name == :Vararg
                     return fst.parameters[1]
@@ -484,14 +484,14 @@ function guesstype( ex, ctx::LintContext )
                 return partyp
             end
         elseif partyp <: Tuple
-            if isempty( partyp )
+            if isempty( partyp.types )
                 return Any
             end
-            if length( partyp ) == 1 || partyp[1].name.name == :Vararg
-                return eval( Main, partyp[1].name.name )
+            if length( partyp.types ) == 1 || partyp.types[1].name.name == :Vararg
+                return eval( Main, partyp.types[1].name.name )
             end
-            elt = partyp[1]
-            if all( x->x == elt, partyp )
+            elt = partyp.types[1]
+            if all( x->x == elt, partyp.types )
                 return elt
             end
         #=

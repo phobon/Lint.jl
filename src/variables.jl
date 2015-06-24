@@ -228,15 +228,15 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         elseif rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
             rhstype = eltype( rhstype )
         elseif rhstype <: Associative
-            rhstype = ( keytype( rhstype ), valuetype( rhstype ) )
+            rhstype = @compat(Tuple{ keytype( rhstype ), valuetype( rhstype ) })
         end
 
-        if typeof( rhstype ) <: Tuple && length( rhstype ) != tuplelen
+        if rhstype <: Tuple && length( rhstype.types ) != tuplelen
             msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
         end
     end
 
-    if typeof( rhstype ) <: Tuple && length( rhstype ) != tuplelen && !isForLoop
+    if rhstype <: Tuple && length( rhstype.types ) != tuplelen && !isForLoop
         if length( syms ) > 1
             msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
         end
